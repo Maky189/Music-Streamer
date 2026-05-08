@@ -1,32 +1,13 @@
 # Music Streaming DB — Advanced SQL Practice
 
-A self-contained, Docker-powered playground for practicing **transactions, isolation
+A Docker-powered playground for practicing **transactions, isolation
 levels, stored procedures, cursors, triggers, indexes, query design, and ACID semantics**
-against a realistic music-streaming schema. A small Node/Express API and a static web
-console are bundled so the database is something you can **see, touch, and listen to** —
-the ▶ buttons in the UI stream the actual `.mp3` files from `~/Music`.
+against a realistic music-streaming schema.
+ 
+A small Node/Express API and a static web
+console are bundled and stream the actual `.mp3` files from `~/Music`.
 
----
-
-## Table of contents
-
-1. [What this project is](#what-this-project-is)
-2. [Relational vs Non-Relational Databases](#relational-vs-non-relational-databases)
-3. [Architecture](#architecture)
-4. [Quick start](#quick-start)
-5. [Database schema](#database-schema)
-6. [Backend API](#backend-api)
-7. [Frontend console](#frontend-console)
-8. [Practice exercises](#practice-exercises)
-9. [Query exercises & the auto-grader](#query-exercises--the-auto-grader)
-10. [Project layout](#project-layout)
-11. [Troubleshooting](#troubleshooting)
-
----
-
-## What this project is
-
-It's three things stacked on top of each other:
+## this project is three things stacked on top of each other:
 
 1. **A real Postgres database** seeded with the actual songs in your `~/Music` folder
    (16 tracks, 9 artists, 10 albums, 12 users, 12 playlists, 200 play-history rows).
@@ -37,7 +18,7 @@ It's three things stacked on top of each other:
    exercises with a `check.py` auto-grader that diffs your results against canonical
    references and tells you exactly what's wrong.
 
-You learn by **breaking and fixing** a working app — the schema isn't a toy, the queries
+Learn by **breaking and fixing** a working app — the schema isn't a toy, the queries
 aren't contrived, and every concept (transactions, cursors, triggers, indexes, isolation
 levels) maps to a scenario you might actually meet at work.
 
@@ -64,7 +45,7 @@ A relational database organizes data into **tables** (also called relations) wit
 - **SQL** provides a powerful, standardized query language
 - **Transactions** ensure data integrity across multiple operations
 
-**When to use:** Financial systems, e-commerce, user management, anything where data integrity
+Used in Financial systems, e-commerce, user management, anything where data integrity
 and consistency are critical. In our music streaming app, we need transactions to ensure a
 playlist edit and the song count stay in sync, and foreign keys to ensure a song can't be
 added to a non-existent playlist.
@@ -85,7 +66,7 @@ Non-relational databases store data in flexible formats without a rigid schema:
 - **Weaker consistency guarantees** — eventual consistency is common
 - **No joins** — data is often denormalized (duplicated) for query speed
 
-**When to use:** Real-time analytics, session storage, caches, logs, content with varying
+Used in Real-time analytics, session storage, caches, logs, content with varying
 structure, or systems that prioritize speed over strict consistency.
 
 ### Why This Project Is Relational
@@ -368,7 +349,7 @@ A single-page, framework-free HTML/CSS/JS app served by nginx (`frontend/`):
 - Live overview tiles (counts per table), refreshed when you act.
 - Top songs and top artists (by aggregate plays).
 - Search across song titles and artists, debounced.
-- Playlist browser: pick → load → see ordered songs → ▶ play any track.
+- Playlist browser: pick → load → see ordered songs → play any track.
 - Forms to create users, add songs to playlists (hits the transactional endpoint), and log
   plays (`POST /api/plays`).
 - A sticky bottom audio player that streams the underlying mp3 from `~/Music`.

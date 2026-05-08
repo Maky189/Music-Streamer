@@ -1,0 +1,21 @@
+-- File: practice/triggers/01-audit-log.sql
+-- Objective: AFTER INSERT/UPDATE/DELETE trigger that writes to audit_log.
+--
+-- TODO:
+--   1. CREATE FUNCTION fn_audit_songs() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+--        BEGIN
+--          INSERT INTO audit_log(table_name, operation, row_pk, payload)
+--          VALUES ('songs', TG_OP,
+--                  COALESCE(NEW.song_id, OLD.song_id)::text,
+--                  jsonb_build_object('old', to_jsonb(OLD), 'new', to_jsonb(NEW)));
+--          RETURN COALESCE(NEW, OLD);
+--        END $$;
+--   2. CREATE TRIGGER trg_audit_songs AFTER INSERT OR UPDATE OR DELETE ON songs
+--      FOR EACH ROW EXECUTE FUNCTION fn_audit_songs();
+--
+-- TODO test:
+--   - INSERT a song, UPDATE it, DELETE it.
+--   - SELECT * FROM audit_log ORDER BY audit_id DESC LIMIT 5; — confirm 3 rows.
+
+-- Your code here:
+

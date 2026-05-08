@@ -1,0 +1,22 @@
+-- File: practice/transactions/01-basic-transaction.sql
+-- Objective: Practice basic transaction control with COMMIT and ROLLBACK.
+--
+-- TODO 1 — Successful transaction:
+--   1. BEGIN a transaction.
+--   2. INSERT a new user (pick a username/email that doesn't already exist).
+--   3. INSERT a playlist owned by that user.
+--   4. COMMIT.
+--   5. SELECT to confirm both rows are present.
+--
+-- TODO 2 — Aborted transaction:
+--   1. BEGIN a transaction.
+--   2. DELETE one specific song by song_id.
+--   3. ROLLBACK.
+--   4. SELECT to confirm the song still exists.
+--
+-- Hints:
+--   - Use RETURNING to grab the new user_id from the INSERT.
+--   - Inside a single psql session, use \echo and SELECT to inspect state between steps.
+
+-- Your code here:
+

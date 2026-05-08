@@ -1,0 +1,32 @@
+-- File: practice/advanced/04-serializable-test.sql
+-- Objective: Demonstrate that SERIALIZABLE isolation rejects writes that would violate
+--            invariants only visible across concurrent transactions.
+--
+-- Scenario: An invariant — total premium users in country 'US' must not exceed 5.
+--   Currently there are 4. Two sessions each try to upgrade a different user to 'premium'.
+--   Each tx alone reads count=4 and proceeds. Both commit → invariant violated (now 6).
+--
+-- TODO:
+--   At READ COMMITTED:
+--     Session A:  BEGIN;
+--                 SELECT COUNT(*) FROM users WHERE country='US' AND subscription='premium';
+--                 -- gets 4; below the cap.
+--                 UPDATE users SET subscription='premium' WHERE user_id = <userA>;
+--     Session B:  BEGIN;
+--                 SELECT COUNT(*) ... ;          -- still 4
+--                 UPDATE users SET subscription='premium' WHERE user_id = <userB>;
+--                 COMMIT;
+--     Session A:  COMMIT;
+--   Verify both succeeded — invariant is now broken.
+--
+-- TODO fix at SERIALIZABLE:
+--   Repeat both sessions starting with BEGIN ISOLATION LEVEL SERIALIZABLE;
+--   One COMMIT will fail with SQLSTATE 40001 (could not serialize access due to read/write
+--   dependencies). The application should retry.
+--
+-- TODO bonus:
+--   Add a CHECK / EXCLUDE constraint or a trigger that enforces the cap unconditionally.
+--   Discuss when DB-level enforcement beats SERIALIZABLE.
+
+-- Your code here:
+

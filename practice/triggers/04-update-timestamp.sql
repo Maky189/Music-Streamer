@@ -1,0 +1,24 @@
+-- File: practice/triggers/04-update-timestamp.sql
+-- Objective: Auto-update modified_at on UPDATE.
+--
+-- TODO:
+--   1. CREATE FUNCTION fn_set_modified_at() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+--        BEGIN
+--          NEW.modified_at := CURRENT_TIMESTAMP;
+--          RETURN NEW;
+--        END $$;
+--   2. Attach this trigger BEFORE UPDATE on:
+--        - users
+--        - playlists
+--      (any other table that has a modified_at column).
+--
+-- TODO test:
+--   - UPDATE users SET subscription = 'premium' WHERE user_id = 2;
+--   - SELECT modified_at — confirm it just changed.
+--   - Run it again immediately. modified_at should advance even if no other column changed.
+--
+-- TODO bonus:
+--   - Use pg_trigger_depth() = 0 inside the function to skip when called recursively.
+
+-- Your code here:
+

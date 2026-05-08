@@ -1,0 +1,24 @@
+-- File: practice/transactions/04-isolation-test.sql
+-- Objective: Observe behavior under different isolation levels with two sessions.
+--
+-- Run this with TWO psql sessions side by side. Comments label which session runs which step.
+--
+-- TODO — Lost update at READ COMMITTED:
+--   Session A:  BEGIN; SELECT subscription FROM users WHERE user_id = 1;
+--   Session B:  BEGIN; SELECT subscription FROM users WHERE user_id = 1;
+--   Session A:  UPDATE users SET subscription = 'premium' WHERE user_id = 1; COMMIT;
+--   Session B:  UPDATE users SET subscription = 'family'  WHERE user_id = 1; COMMIT;
+--   Question:  Whose value won? Was Session B aware of A's update?
+--
+-- TODO — Same scenario at SERIALIZABLE:
+--   Use BEGIN ISOLATION LEVEL SERIALIZABLE in both sessions.
+--   Question:  Which session got the 40001 serialization_failure error?
+--
+-- TODO — Stable reads at REPEATABLE READ:
+--   Session A:  BEGIN ISOLATION LEVEL REPEATABLE READ;
+--               SELECT COUNT(*) FROM songs WHERE explicit;
+--   Session B:  INSERT INTO songs (...) VALUES (... explicit=TRUE ...);  -- commits
+--   Session A:  SELECT COUNT(*) FROM songs WHERE explicit;  -- same as before? COMMIT.
+--
+-- Your code here (both sessions):
+

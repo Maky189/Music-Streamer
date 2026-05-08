@@ -1,0 +1,25 @@
+-- File: practice/advanced/02-deadlock-scenario.sql
+-- Objective: Cause a deadlock on purpose, observe the error, then prevent it.
+--
+-- TODO produce the deadlock with two sessions:
+--
+--   Session A:  BEGIN;
+--               UPDATE playlists SET name = name || ' A' WHERE playlist_id = 1;
+--               -- (don't commit yet)
+--   Session B:  BEGIN;
+--               UPDATE playlists SET name = name || ' B' WHERE playlist_id = 2;
+--               UPDATE playlists SET name = name || ' B' WHERE playlist_id = 1;  -- waits on A
+--   Session A:  UPDATE playlists SET name = name || ' A' WHERE playlist_id = 2;  -- DEADLOCK!
+--
+--   Postgres detects this within ~1s and aborts ONE transaction with SQLSTATE 40P01.
+--
+-- TODO fix:
+--   Always acquire row locks in a deterministic order — e.g. ascending playlist_id.
+--   Rewrite both sessions so each updates id=1 first, then id=2.
+--
+-- TODO bonus:
+--   Use SELECT ... FOR UPDATE NOWAIT or FOR UPDATE SKIP LOCKED in a queue-style scenario.
+--   What changes about the failure mode?
+
+-- Your code here:
+

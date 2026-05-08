@@ -1,0 +1,28 @@
+-- File: practice/advanced/03-transaction-savepoints.sql
+-- Objective: Use SAVEPOINTs for partial rollback inside a larger transaction.
+--
+-- Scenario: Bulk-import 5 songs. If one fails, skip it and keep the rest.
+--
+-- TODO:
+--   BEGIN;
+--     INSERT a song A — ok.
+--     SAVEPOINT sp1;
+--     INSERT a song B with bad data (e.g. duration_seconds = 0).
+--     -- Catch the error, ROLLBACK TO SAVEPOINT sp1.
+--     INSERT a song C — ok.
+--     INSERT a song D — ok.
+--   COMMIT;
+--
+--   Confirm: A, C, D are present; B is not; the transaction COMMITed normally.
+--
+--   Two valid styles:
+--   1. Wrap the whole thing in DO $$ ... EXCEPTION WHEN ... $$ — savepoint is implicit
+--      around each BEGIN/EXCEPTION block.
+--   2. Use explicit SAVEPOINT / ROLLBACK TO SAVEPOINT in psql.
+--
+-- TODO compare:
+--   What if you used one big transaction without savepoints and song B fails? What if you used
+--   five separate transactions? Discuss durability vs atomicity tradeoffs.
+
+-- Your code here:
+

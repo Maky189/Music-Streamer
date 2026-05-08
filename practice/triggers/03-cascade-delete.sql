@@ -1,0 +1,22 @@
+-- File: practice/triggers/03-cascade-delete.sql
+-- Objective: Maintain derived state (playlists.song_count) via triggers on playlist_songs.
+--
+-- TODO:
+--   1. AFTER INSERT trigger: bump playlists.song_count by +1 for the affected playlist
+--      and refresh playlists.modified_at.
+--   2. AFTER DELETE trigger: decrement song_count by 1.
+--   3. (Optional) AFTER UPDATE trigger: if playlist_id changed (rare), adjust both old and new.
+--
+--   Both functions return the appropriate row (NEW for insert, OLD for delete).
+--
+-- TODO test:
+--   - DELETE one row from playlist_songs.
+--   - Confirm playlists.song_count dropped by 1 and modified_at advanced.
+--   - INSERT a row → confirm song_count went back up.
+--
+-- TODO discussion:
+--   Compare this trigger-based approach with maintaining song_count in the procedure from
+--   procedures/01-add-song-to-playlist.sql. Which is harder to forget? Which is easier to debug?
+
+-- Your code here:
+

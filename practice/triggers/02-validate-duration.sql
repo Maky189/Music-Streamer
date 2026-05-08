@@ -1,0 +1,24 @@
+-- File: practice/triggers/02-validate-duration.sql
+-- Objective: BEFORE INSERT/UPDATE trigger that validates song duration.
+--
+-- TODO:
+--   1. CREATE FUNCTION fn_validate_song() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+--        BEGIN
+--          IF NEW.duration_seconds < 30 THEN
+--             RAISE EXCEPTION 'Songs must be at least 30 seconds (got %)', NEW.duration_seconds;
+--          END IF;
+--          IF NEW.duration_seconds > 1800 THEN
+--             RAISE EXCEPTION 'Songs must be under 30 minutes';
+--          END IF;
+--          NEW.title := TRIM(NEW.title);    -- mutating NEW is fine in BEFORE triggers
+--          RETURN NEW;
+--        END $$;
+--   2. CREATE TRIGGER trg_validate_song BEFORE INSERT OR UPDATE ON songs
+--      FOR EACH ROW EXECUTE FUNCTION fn_validate_song();
+--
+-- TODO test:
+--   - Try inserting a 10-second song and a 4000-second song. Both should error.
+--   - Insert a valid song with leading whitespace in the title; verify it was trimmed.
+
+-- Your code here:
+

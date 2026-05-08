@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Music Streaming DB — Console</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>🎧 Music Streaming Console</h1>
+  <p class="sub">A live UI over the practice database. Every action is a real SQL query.</p>
+  <div id="health" class="pill">checking…</div>
+</header>
+
+<main>
+  <section>
+    <h2>Overview</h2>
+    <div id="stats" class="stats"></div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Top Songs</h3>
+      <ol id="top-songs" class="list"></ol>
+    </div>
+
+    <div class="card">
+      <h3>Top Artists by Plays</h3>
+      <ol id="artists" class="list"></ol>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Search</h3>
+    <input id="q" type="text" placeholder="Search songs or artists…" />
+    <ul id="search-results" class="list"></ul>
+  </section>
+
+  <section class="card">
+    <h3>Playlists</h3>
+    <select id="playlist-pick"></select>
+    <button id="playlist-load">Load</button>
+    <div id="playlist-detail"></div>
+
+    <hr />
+
+    <h4>Add a song to the selected playlist (transactional)</h4>
+    <input id="add-song-id" type="number" placeholder="song_id" />
+    <button id="add-song-btn">Add song</button>
+    <div id="add-song-msg" class="msg"></div>
+  </section>
+
+  <section class="card">
+    <h3>Create User</h3>
+    <input id="nu-username" placeholder="username" />
+    <input id="nu-email"    placeholder="email" />
+    <input id="nu-country"  placeholder="country (2-letter)" maxlength="2" />
+    <select id="nu-sub">
+      <option value="free">free</option>
+      <option value="premium">premium</option>
+      <option value="family">family</option>
+    </select>
+    <button id="nu-btn">Create</button>
+    <div id="nu-msg" class="msg"></div>
+  </section>
+
+  <section class="card">
+    <h3>Log a Play</h3>
+    <input id="lp-user"    type="number" placeholder="user_id" />
+    <input id="lp-song"    type="number" placeholder="song_id" />
+    <input id="lp-seconds" type="number" placeholder="seconds_listened" />
+    <label><input id="lp-completed" type="checkbox" /> completed</label>
+    <button id="lp-btn">Record play</button>
+    <div id="lp-msg" class="msg"></div>
+  </section>
+</main>
+
+<div id="player-bar">
+  <span id="player-title" class="secondary">Pick a song to play —</span>
+  <audio id="player" controls preload="none"></audio>
+</div>
+
+<footer>
+  <p>API: <code id="api-url"></code> — schema documented in <code>docs/</code> — exercises in <code>practice/</code>.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

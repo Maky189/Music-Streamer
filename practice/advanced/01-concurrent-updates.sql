@@ -1,0 +1,33 @@
+-- File: practice/advanced/01-concurrent-updates.sql
+-- Objective: See how concurrent INSERTs into playlist_songs can corrupt playlists.song_count
+--            without proper locking — and fix it.
+--
+-- Run with TWO sessions (A and B).
+--
+-- Setup: pick a target playlist with current song_count = X.
+--
+-- Naive (broken) version:
+--   Session A:  BEGIN;
+--               SELECT song_count FROM playlists WHERE playlist_id = 1;   -- reads X
+--               -- (does some work)
+--               UPDATE playlists SET song_count = X + 1 WHERE playlist_id = 1;
+--   Session B:  BEGIN;
+--               SELECT song_count FROM playlists WHERE playlist_id = 1;   -- also reads X !
+--               UPDATE playlists SET song_count = X + 1 WHERE playlist_id = 1;
+--               COMMIT;
+--   Session A:  COMMIT;
+--   Result:     song_count = X + 1, but TWO songs were really added → off by one.
+--
+-- TODO fix #1 — pessimistic lock:
+--   Both sessions: SELECT song_count FROM playlists WHERE playlist_id = 1 FOR UPDATE;
+--   The second session blocks until the first commits.
+--
+-- TODO fix #2 — relative update:
+--   UPDATE playlists SET song_count = song_count + 1 WHERE playlist_id = 1;
+--   No read-modify-write window — atomic at the row level.
+--
+-- TODO fix #3 — let the trigger from triggers/03-cascade-delete.sql do it.
+--   How does it interact with concurrent inserts into playlist_songs?
+
+-- Your code here:
+

@@ -17,19 +17,3 @@
 --   - Save the times — you'll compare them in the next exercise.
 
 -- Your code here:
-
-EXPLAIN ANALYZE
-SELECT * FROM songs WHERE album_id = 17;
-
-EXPLAIN ANALYZE
-SELECT * FROM play_history WHERE user_id = 1 ORDER BY played_at DESC LIMIT 20;
-
-EXPLAIN ANALYZE
-SELECT * FROM users WHERE LOWER(email) = 'alice@example.com';
-
-EXPLAIN ANALYZE
-SELECT * FROM songs WHERE title ILIKE '%neon%';
-
-EXPLAIN ANALYZE
-SELECT COUNT(*) FROM playlist_songs WHERE song_id = 42;
-

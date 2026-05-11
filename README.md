@@ -449,23 +449,3 @@ Zero pip installs — the grader just shells out to `docker compose exec db psql
 │   └── app.js
 └── solutions/                 # intentionally empty — you fill these in
 ```
-
-## Troubleshooting
-
-- **`port already allocated`** — something else is on 5432, 3001, or 8080. Edit
-  `docker-compose.yml` or stop the conflicting service.
-- **Schema didn't reload after I changed the SQL** — Postgres only runs init scripts on a
-  *fresh* volume. `docker compose down -v && docker compose up --build` wipes it and
-  re-applies.
-- **Backend logs `[db] not ready (1/30)`** — that's the wait-for-DB loop; the API starts
-  as soon as Postgres accepts connections, usually within a few seconds.
-- **No audio when I press ▶** — check that `~/Music` exists and contains the `.mp3`s
-  named in `setup/01-seed-data.sql`. If your library lives elsewhere, edit the
-  `${HOME}/Music` line in `docker-compose.yml`.
-- **`mount ... no such file or directory`** on Docker Desktop / WSL — this is fixed in the
-  current setup (we bake init SQL into a custom image instead of bind-mounting individual
-  files). If you've customised compose and run into it again, prefer directory mounts to
-  file mounts.
-- **Checker says `docker not found`** — `python3 practice/queries/check.py` shells out to
-  `docker compose`. Make sure Docker is running and `docker compose ps` works from your
-  terminal.

@@ -16,6 +16,22 @@ services:
       timeout: 3s
       retries: 20
 
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: music
+      MONGO_INITDB_ROOT_PASSWORD: music
+      MONGO_INITDB_DATABASE: music
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet -u music -p music --authenticationDatabase admin
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   backend:
     build: ./backend
     environment:
@@ -24,6 +40,7 @@ services:
       PGUSER: music
       PGPASSWORD: music
       PGDATABASE: music
+      MONGO_URI: mongodb://music:music@mongo:27017/music?authSource=admin
       PORT: 3001
       MUSIC_DIR: /music
     volumes:
@@ -32,6 +49,8 @@ services:
       - "3001:3001"
     depends_on:
       db:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
 
   frontend:
@@ -43,3 +62,4 @@ services:
 
 volumes:
   dbdata:
+  mongodata:

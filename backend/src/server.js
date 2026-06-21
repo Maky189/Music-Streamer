@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'node:path';
 import fs from 'node:fs';
 import { pool, waitForDb } from './db.js';
+import { connectMongo, getMongoStats, getRecentPlays, recordPlay, getRecommendations, generateRecommendations } from './mongo.js';
 
 const MUSIC_DIR = process.env.MUSIC_DIR || '/music';
 
@@ -11,12 +12,18 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/health', async (_req, res) => {
+  let pgOk = false, pgTime = null, mongoOk = false;
   try {
     const r = await pool.query('SELECT NOW() AS now');
-    res.json({ ok: true, db_time: r.rows[0].now });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
+    pgOk = true;
+    pgTime = r.rows[0].now;
+  } catch (e) { /* pg down */ }
+  try {
+    await getMongoStats();
+    mongoOk = true;
+  } catch (e) { /* mongo down */ }
+  const ok = pgOk && mongoOk;
+  res.status(ok ? 200 : 500).json({ ok, pg: { ok: pgOk, time: pgTime }, mongo: { ok: mongoOk } });
 });
 
 app.get('/api/stats', async (_req, res, next) => {
@@ -216,12 +223,75 @@ app.post('/api/plays', async (req, res, next) => {
   }
 });
 
+app.post('/api/plays/mongo', async (req, res, next) => {
+  const { user_id, song_id, seconds_listened, completed = false } = req.body || {};
+  if (!user_id || !song_id || seconds_listened == null)
+    return res.status(400).json({ error: 'user_id, song_id, seconds_listened required' });
+  try {
+    const songInfo = await pool.query(
+      `SELECT s.title AS song_title, s.duration_seconds, ar.name AS artist_name
+         FROM songs s JOIN albums al ON al.album_id = s.album_id
+         JOIN artists ar ON ar.artist_id = al.artist_id
+        WHERE s.song_id = $1`, [song_id]);
+    const userInfo = await pool.query(
+      `SELECT username FROM users WHERE user_id = $1`, [user_id]);
+    if (!songInfo.rows[0]) return res.status(404).json({ error: 'song not found' });
+    await recordPlay({
+      user_id,
+      song_id,
+      seconds_listened,
+      completed,
+      username: userInfo.rows[0]?.username || 'unknown',
+      song_title: songInfo.rows[0]?.song_title,
+      artist_name: songInfo.rows[0]?.artist_name,
+      duration_seconds: songInfo.rows[0]?.duration_seconds,
+    });
+    res.status(201).json({ ok: true, stored: 'mongodb' });
+  } catch (e) { next(e); }
+});
+
+app.get('/api/mongo/stats', async (_req, res, next) => {
+  try {
+    const stats = await getMongoStats();
+    res.json(stats);
+  } catch (e) { next(e); }
+});
+
+app.get('/api/mongo/recent-plays', async (req, res, next) => {
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+  try {
+    const plays = await getRecentPlays(limit);
+    res.json(plays);
+  } catch (e) { next(e); }
+});
+
+app.get('/api/recommendations/:userId', async (req, res, next) => {
+  const userId = Number(req.params.userId);
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  try {
+    let recs = await getRecommendations(userId);
+    if (recs.length === 0) {
+      recs = await generateRecommendations(userId);
+    }
+    res.json(recs);
+  } catch (e) { next(e); }
+});
+
+app.post('/api/recommendations/generate/:userId', async (req, res, next) => {
+  const userId = Number(req.params.userId);
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  try {
+    const recs = await generateRecommendations(userId);
+    res.json(recs);
+  } catch (e) { next(e); }
+});
+
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: err.message, code: err.code });
 });
 
 const PORT = Number(process.env.PORT) || 3001;
-waitForDb()
+Promise.all([waitForDb(), connectMongo()])
   .then(() => app.listen(PORT, () => console.log(`API on :${PORT}`)))
   .catch(err => { console.error(err); process.exit(1); });

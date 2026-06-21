@@ -1,26 +1,66 @@
-# Music Streaming DB — Advanced SQL Practice
+# Music Streaming DB — Final Integrated Version
 
-A Docker-powered playground for practicing **transactions, isolation
-levels, stored procedures, cursors, triggers, indexes, query design, and ACID semantics**
-against a realistic music-streaming schema.
- 
-A small Node/Express API and a static web
-console are bundled and stream the actual `.mp3` files from `~/Music`.
+A Docker-powered full-stack music streaming platform integrating **PostgreSQL** (relational)
+and **MongoDB** (NoSQL) with a live web console and audio playback from `~/Music`.
 
-## this project is three things stacked on top of each other:
+This project demonstrates:
+- **Relational database design** with PostgreSQL (ACID transactions, foreign keys, triggers, indexes)
+- **NoSQL integration** with MongoDB (document storage, aggregation, time-series activity feeds)
+- **Hybrid architecture** — dual-writing to both databases for different access patterns
+- **Real audio streaming** from your local music library
 
-1. **A real Postgres database** seeded with the actual songs in your `~/Music` folder
-   (16 tracks, 9 artists, 10 albums, 12 users, 12 playlists, 200 play-history rows).
-2. **A live application** (Node/Express + static HTML) that uses the database the way a
-   real product would — playlists are mutated inside transactions, plays are recorded with
-   atomic `INSERT + UPDATE`, audio is streamed from disk via a path stored in the DB.
-3. **A graded curriculum** — 24 SQL exercises organised by concept, plus 15 query
-   exercises with a `check.py` auto-grader that diffs your results against canonical
-   references and tells you exactly what's wrong.
+---
 
-Learn by **breaking and fixing** a working app — the schema isn't a toy, the queries
-aren't contrived, and every concept (transactions, cursors, triggers, indexes, isolation
-levels) maps to a scenario you might actually meet at work.
+## Architecture
+
+```
+                                 ┌────────────────────────────────────┐
+                                 │      Browser (localhost:8080)      │
+                                 └────────────┬───────────────────────┘
+                                              │ HTTP
+                           ┌──────────────────▼───────────────────────┐
+                           │   frontend (nginx + static HTML/JS/CSS)  │
+                           │     • serves SPA                         │
+                           │     • reverse-proxies /api/* → backend   │
+                           └──────────────────┬───────────────────────┘
+                                              │ /api/*
+                           ┌──────────────────▼───────────────────────┐
+                           │     backend (Node 20 + Express)          │
+                           │     • REST API for all operations        │
+                           │     • Dual-write plays to both databases │
+                           │     • Audio streaming from /music        │
+                           │     • MongoDB-driven recommendations     │
+                           └─────┬──────────────────────────┬─────────┘
+                                 │ SQL                      │ NoSQL
+                           ┌─────▼──────────────┐    ┌──────▼──────────────┐
+                           │  PostgreSQL 16     │    │  MongoDB 7          │
+                           │  • users, artists  │    │  • plays (activity) │
+                           │  • albums, songs   │    │  • recommendations  │
+                           │  • playlists       │    │  • analytics        │
+                           │  • play_history    │    └─────────────────────┘
+                           │  • transactions    │
+                           └─────┬──────────────┘
+                                 │ read-only mount
+                                 │ ${HOME}/Music → /music
+                                 ▼
+                         your ~/Music/*.mp3
+```
+
+The four services live in `docker-compose.yml`. Every service has a health check —
+the backend waits for both databases before accepting connections.
+
+---
+
+## Data Distribution Strategy
+
+| Data              | Primary Store | MongoDB | Rationale                                             |
+|-------------------|---------------|---------|-------------------------------------------------------|
+| Users             | PostgreSQL    | —       | Strong consistency, unique constraints                |
+| Artists/Albums    | PostgreSQL    | —       | Join-heavy queries, referential integrity             |
+| Songs/Playlists   | PostgreSQL    | —       | Transactional updates, complex queries                |
+| Play history      | PostgreSQL    | ✓       | PG for transactional integrity, Mongo for analytics   |
+| Recommendations   | —             | ✓       | Computed via aggregation, stored as documents         |
+| Activity feed     | —             | ✓       | Time-series, fast reads with embedded denormalized data |
 
 ## Relational vs Non-Relational Databases
 
@@ -132,11 +172,12 @@ docker compose up --build
 
 The project **automatically scans `~/Music` for MP3 files** and populates the database with them. Every run uses your actual music library (or falls back to sample data if no MP3s are found).
 
-| Service     | URL                                | Purpose                                |
-|-------------|------------------------------------|----------------------------------------|
-| Web console | http://localhost:8080              | Browse, search, play, edit             |
-| API         | http://localhost:3001/api/health   | Raw JSON; everything under `/api/*`    |
-| Postgres    | `postgres://music:music@localhost:5432/music` | psql / DBeaver / your client |
+| Service      | URL                                            | Purpose                                            |
+|--------------|------------------------------------------------|----------------------------------------------------|
+| Web console  | http://localhost:8080                          | Full UI: browse, search, play, recommendations    |
+| API          | http://localhost:3001/api/health               | Health check (PG + Mongo status)                  |
+| PostgreSQL   | `postgres://music:music@localhost:5432/music`  | psql / DBeaver / your client                      |
+| MongoDB      | `mongodb://music:music@localhost:27017/music`  | mongosh / Compass / your client                   |
 
 ### How Music Detection Works
 
@@ -171,10 +212,11 @@ Or flat:
 docker compose down -v
 ```
 
-### Connect a psql shell to the running DB
+### Connect to databases
 
 ```bash
 docker compose exec db psql -U music -d music
+docker compose exec mongo mongosh -u music -p music --authenticationDatabase admin music
 ```
 
 ## Database schema
@@ -321,9 +363,11 @@ ANALYZE`, deciding when to add more (composite, partial, expression, GIN trigram
 
 Express on port 3001, served via the nginx reverse proxy at `/api/*`.
 
+### PostgreSQL Endpoints
+
 | Method | Path                                | Purpose                                                                      |
 |--------|-------------------------------------|------------------------------------------------------------------------------|
-| GET    | `/api/health`                       | DB ping; returns `{ ok, db_time }`                                           |
+| GET    | `/api/health`                       | Health check; returns `{ ok, pg: {...}, mongo: {...} }`                      |
 | GET    | `/api/stats`                        | Row counts per table — drives the dashboard tiles                            |
 | GET    | `/api/users`                        | All users                                                                    |
 | POST   | `/api/users`                        | Create user (`{ username, email, country, subscription }`)                   |
@@ -337,6 +381,16 @@ Express on port 3001, served via the nginx reverse proxy at `/api/*`.
 | POST   | `/api/playlists/:id/songs`          | **Transactional**: lock parent row, append song, bump `song_count`           |
 | POST   | `/api/plays`                        | **Transactional**: insert into `play_history`; if completed, bump play_count |
 
+### MongoDB Endpoints (NoSQL Feature)
+
+| Method | Path                                   | Purpose                                                    |
+|--------|----------------------------------------|------------------------------------------------------------|
+| POST   | `/api/plays/mongo`                     | Record a play event directly in MongoDB                    |
+| GET    | `/api/mongo/stats`                     | MongoDB collection stats + top played songs                |
+| GET    | `/api/mongo/recent-plays?limit=N`      | Recent play activity feed (time-series from MongoDB)       |
+| GET    | `/api/recommendations/:userId`         | Get song recommendations for a user                        |
+| POST   | `/api/recommendations/generate/:userId`| Generate/refresh recommendations using aggregation pipeline |
+
 The two `POST` endpoints that mutate multiple tables (`/playlists/:id/songs`,
 `/plays`) wrap their work in `BEGIN / COMMIT` and use `SELECT ... FOR UPDATE` for
 concurrent-safe counter maintenance — a working illustration of what
@@ -346,16 +400,20 @@ concurrent-safe counter maintenance — a working illustration of what
 
 A single-page, framework-free HTML/CSS/JS app served by nginx (`frontend/`):
 
-- Live overview tiles (counts per table), refreshed when you act.
-- Top songs and top artists (by aggregate plays).
-- Search across song titles and artists, debounced.
-- Playlist browser: pick → load → see ordered songs → play any track.
-- Forms to create users, add songs to playlists (hits the transactional endpoint), and log
-  plays (`POST /api/plays`).
-- A sticky bottom audio player that streams the underlying mp3 from `~/Music`.
+- **Dashboard tiles**: row counts per PostgreSQL table, refreshed on every action.
+- **Recommendations engine**: Get NoSQL-powered song recommendations per user; generate/refresh with
+  a single click (results are cached in MongoDB).
+- **Top songs & top artists**: by aggregate play counts (PostgreSQL queries).
+- **Search**: debounced ILIKE search across song titles and artist names.
+- **Playlist browser**: pick → load → see ordered songs → play any track (transactional add).
+- **Log plays**: three modes — PostgreSQL only, MongoDB only, or dual-write both.
+- **Activity feed**: real-time recent plays streamed from MongoDB (time-series).
+- **MongoDB stats**: collection counts, top played songs, latest play.
+- **Dual database health indicators**: PostgreSQL and MongoDB status displayed in the header.
+- **Sticky audio player**: streams mp3 from `~/Music` via the backend.
 
-Whenever you do anything in the UI, the dashboard tiles re-fetch — you can watch the
-database react in real time.
+Whenever you do anything in the UI, the dashboard tiles re-fetch — you can watch both
+databases react in real time.
 
 ## Practice exercises
 
@@ -415,17 +473,10 @@ Zero pip installs — the grader just shells out to `docker compose exec db psql
 
 ```
 .
-├── README.md                  # this file
-├── docker-compose.yml         # one-command stack (db + backend + frontend)
-├── docs/                      # 8 educational markdown files
-│   ├── 01-acid-properties.md
-│   ├── 02-transactions.md
-│   ├── 03-isolation-levels.md
-│   ├── 04-stored-procedures.md
-│   ├── 05-cursors.md
-│   ├── 06-triggers.md
-│   ├── 07-practice-scenarios.md
-│   └── 08-indexes.md
+├── README.md                  # this file (full documentation)
+├── docker-compose.yml         # 4-service stack (pg + mongo + backend + frontend)
+├── docs/                      # 8 educational markdown files (SQL concepts)
+│   └── 01-acid-properties.md  ...
 ├── setup/
 │   ├── Dockerfile             # postgres:16 + baked-in init SQL
 │   ├── 00-create-schema.sql   # CREATE TABLE / FK / CHECK / INDEX
@@ -437,15 +488,16 @@ Zero pip installs — the grader just shells out to `docker compose exec db psql
 │   └── queries/               # 15 graded query exercises + check.py
 ├── backend/
 │   ├── Dockerfile             # node:20-alpine
-│   ├── package.json
+│   ├── package.json           # express, pg, mongodb, cors
 │   └── src/
 │       ├── db.js              # pg.Pool + retry-until-ready
-│       └── server.js          # all routes, transactional writes, audio streaming
+│       ├── mongo.js           # MongoDB client + recommendations + activity
+│       └── server.js          # all REST routes, dual-write, audio streaming
 ├── frontend/
 │   ├── Dockerfile             # nginx:1.27-alpine
 │   ├── nginx.conf             # static files + /api reverse proxy
-│   ├── index.html
-│   ├── style.css
-│   └── app.js
+│   ├── index.html             # full UI with recommendations, activity, dual-write
+│   ├── style.css              # dark theme, responsive grid, mongo/pg tags
+│   └── app.js                 # all frontend logic + MongoDB integration
 └── solutions/                 # intentionally empty — you fill these in
 ```
